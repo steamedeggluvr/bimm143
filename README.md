@@ -1,2 +1,2 @@
 # bimm143
-my bioinformatics work from spring 2023 at ucsd
+my bioinformatics work from spring 2023 at uc san diego
