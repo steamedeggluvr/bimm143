@@ -1,0 +1,102 @@
+---
+title: "class10"
+author: "Ann (PID: A16028103)"
+format: pdf
+---
+
+# Comparative analysis of ADK
+
+We will get an example ADK sequence from the database. Then, we will use this to find all ADK structures in PDB. 
+
+```{r}
+# Install packages in the R console NOT your Rmd/Quarto file
+
+# install.packages("bio3d")
+# install.packages("devtools")
+# install.packages("BiocManager")
+
+BiocManager::install("msa")
+devtools::install_bitbucket("Grantlab/bio3d-view")
+```
+
+
+```{r}
+library("bio3d")
+library("devtools")
+library("BiocManager")
+library("msa")
+```
+
+**Q10. Which of the packages above is found only on BioConductor and not CRAN?** msa
+
+**Q11. Which of the above packages is not found on BioConductor or CRAN?** 
+
+**Q12. True or False? Functions from the devtools package can be used to install packages from GitHub and BitBucket?**
+
+```{r}
+aa <- get.seq("1ake_A")
+aa
+```
+
+We can now run BLAST with this sequence. 
+
+```{r}
+b <- blast.pdb(aa)
+```
+
+
+```{r}
+# Plot a summary of search results
+hits <- plot(b)
+
+# Let's see what's in our `hits` object
+# hits$pdb.id)
+
+hits <- NULL
+hits$pdb.id <- c('1AKE_A','6S36_A','6RZE_A','3HPR_A','1E4V_A','5EJE_A','1E4Y_A','3X2S_A','6HAP_A','6HAM_A','4K46_A','3GMT_A','4PZL_A')
+```
+
+```{r}
+# Download related PDB files
+files <- get.pdb(hits$pdb.id, path="pdbs", split=TRUE, gzip=TRUE)
+
+# Align related PDBs
+pdbs <- pdbaln(files, fit = TRUE, exefile="msa")
+```
+
+```{r}
+pdbs
+```
+
+Now that we have aligned & superposed structures, we can perform all sorts of analysis on them. Let's do PCA...
+
+```{r}
+# Perform PCA
+pc.xray <- pca(pdbs)
+plot(pc.xray)
+```
+
+Results of PCA on ADK structures. Each dot represents 1 PDB structure.
+
+We can cluster the structures by RMSD (or any other method).
+
+```{r}
+# Measuring / calculating distance
+rd <- rmsd(pdbs)
+
+# Structure-based clustering
+hc.rd <- hclust(dist(rd))
+grps <- cutree(hc.rd, k=3)
+
+plot(pc.xray, 1:2, col=grps)
+```
+
+We want to visualize more major structural variations.
+
+```{r}
+# Visualize first principal component, open in Molestar
+pc1 <- mktrj(pc.xray, pc=1, file="pc_1.pdb")
+```
+
+
+
