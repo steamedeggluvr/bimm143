@@ -1,0 +1,159 @@
+---
+title: "class8miniproject"
+author: "Ann (PID: A16028103)"
+format: pdf
+---
+
+# Breast Cancer Project 
+
+Today we are going to explore some data from the University of Wisconsin Cancer Center on Breast biopsy data. 
+
+```{r}
+# ID column becomes new identifier
+wisc.data <- read.csv("WisconsinCancer.csv", row.names = 1)
+head(wisc.data) # Prints first couple data points
+```
+
+**Q. How many patient samples are in this dataset?**
+
+```{r}
+nrow(wisc.data)
+# Can use separate function to pull data in text
+```
+
+There are `r nrow(wisc.data)` patients in this dataset.
+
+**Q. How many cancer (M) and non-cancer (B) samples are in this dataset?**
+
+```{r}
+# Use $ to focus on 1 column 
+table(wisc.data$diagnosis)
+```
+
+There are 357 benign (B) and 212 malignant (M) samples. 
+
+Save the diagnosis for later use as a reference to compare how well we do with PCA etc. How do we get rid of the "diagnosis" column? 
+
+```{r}
+# as.factor () expresses categories, used in stats 
+diagnosis <- as.factor(wisc.data$diagnosis)
+
+# diagnosis
+```
+
+Now exclude diagnosis column from the data. 
+
+```{r}
+wisc <- wisc.data[ ,-1]
+# New dataset without diagnosis column 
+```
+
+**Q. How many "dimensions", "variables", or "columns" are there in this dataset?**
+
+```{r}
+ncol(wisc)
+```
+
+There are 30 dimensions in the dataset.
+
+# Principal Component Analysis (PCA)
+
+To perform PCA in R we can use the `prcomp()` function. 
+It takes as input a numeric dataset and optional `scale = FALSE/TRUE` argument.
+
+We generally always want to set `scale = TRUE` but let's make sure by checking if the mean and standard deviation values are different across these 30 columns. 
+
+```{r}
+round( colMeans(wisc) )
+# round() function rounds = shows need for scaling 
+```
+
+```{r}
+pca <- prcomp(wisc, scale = TRUE)
+summary(pca)
+
+# PC ordered by importance 
+```
+
+```{r}
+attributes(pca)
+```
+
+```{r}
+plot(pca$x[,1], pca$x[,2], col = diagnosis) 
+```
+
+```{r}
+library( ggplot2 )
+
+x <- as.data.frame( pca$x)
+
+ggplot(x) +
+  aes( PC1, PC2, col=diagnosis) +
+  geom_point()
+```
+
+**Q. How much variance is captured in the top 3 PCs?**
+
+They capture 72.6% of the total variance. 
+
+**Q9. For the first principal component, what is the component of the loading vector (i.e. wisc.pr$rotation[,1]) for the feature concave.points_mean? This tells us how much this original feature contributes to the first PC.**
+
+```{r}
+pca$rotation[ "concave.points_mean", 1]
+```
+
+```{r}
+attributes(pca)
+```
+
+# Combine PCA results with clustering 
+
+We can use our new PCA variables (i.e. the scores along the PCs contained in `pca$x`) as input for other methods such as clustering. 
+
+```{r}
+# Hclustneeds a distance matrix as input 
+d <- dist( pca$x[ ,1:3] )
+
+hc <- hclust(d, method = "ward.D2")
+plot(hc)
+```
+
+To get cluster membership vector we can use the `cutree()` function and specify a height (`h`) or number of groups (`k`).
+
+```{r}
+grps <- cutree(hc, h = 80)
+table(grps)
+```
+
+I want to find out how many diagnosis "M" and "B" are in each group. 
+
+```{r}
+table(diagnosis, grps)
+```
+
+We can also plot our results using clustering vector `grps`. 
+
+```{r}
+ggplot(x) +
+  aes(PC1, PC2, color=grps) + geom_point()
+```
+
+**Q15. What is the specificity and sensitivity of our current results?**
+
+```{r}
+sensitivity <- 179/(179+33)
+sensitivity
+
+specificity <- 333/(333+24)
+specificity
+```
+
+Sensitivity: 84%
+Specificity: 93%
+
+# Prediction
+
+**Q16. Which of these new patients should we prioritize for follow up based on your results?**
+
+We should prioritize patient 2 because the data point falls in the red group, which represented the other malignant cancer patients in the prior data set. 
