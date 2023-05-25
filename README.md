@@ -1,2 +1,2 @@
 # bimm143
-My bioinformatics work
+my bioinformatics work
